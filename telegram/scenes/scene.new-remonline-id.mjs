@@ -7,7 +7,10 @@ import {
     createClient
 } from '../../remonline/remonline.utils.mjs';
 import { saveRemonlineId } from '../telegram.queries.mjs';
-import { onStart } from '../middleware/start-handler.mjs';
+import {
+    onStart,
+    leaveSceneOnCommand
+} from '../middleware/start-handler.mjs';
 
 const noEmailInlineBtm = (() => {
     return Markup.inlineKeyboard([
@@ -21,8 +24,8 @@ const isDataCorrentBtm = (
     () => {
         return Markup.inlineKeyboard([
             [
-                Markup.button.callback('Так', 'my_data_is_ok'),
-                Markup.button.callback('Ні', 'i_put_wrong_data')
+                Markup.button.callback('🟢 Так', 'my_data_is_ok'),
+                Markup.button.callback('🔴 Ні', 'i_put_wrong_data')
             ]
         ])
     }
@@ -31,13 +34,13 @@ const isDataCorrentBtm = (
 const userInfoAppruvalText = (userData) => {
     const { number, fullName, email } = userData
     let text = ''
-    text += `Ім\`я: ${fullName}`
+    text += `👤 Ім\`я: ${fullName}`
     text += `\n`;
-    text += `Телефон: ${number}`
+    text += `☎️ Телефон: ${number}`
 
     if (email) {
         text += `\n`;
-        text += `Пошта: ${email}`
+        text += `🌍 Пошта: ${email}`
     }
     return text
 }
@@ -45,7 +48,7 @@ const userInfoAppruvalText = (userData) => {
 export const createRemonlineId = new Scenes.WizardScene(
     process.env.CREATE_REMONLINE_ID,
     (ctx) => {
-        ctx.reply(ua.createRemonlineId.askFullName);
+        ctx.reply(ua.createRemonlineId.askFullName, Markup.removeKeyboard());
         ctx.wizard.state.userData = {};
         return ctx.wizard.next();
     },
@@ -163,3 +166,5 @@ export const createRemonlineId = new Scenes.WizardScene(
 
     }
 );
+
+createRemonlineId.command('start', leaveSceneOnCommand);

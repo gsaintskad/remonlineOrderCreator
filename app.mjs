@@ -5,7 +5,6 @@ import {
 } from 'telegraf';
 import express from "express";
 import ngrok from 'ngrok';
-
 import fs from 'fs'
 import https from 'https'
 
@@ -75,8 +74,6 @@ bot.use(stage.middleware());
         app.get('/', function (req, res) {
             res.end("Hi from remonlinebot");
         });
-
-        // app.listen(process.env.PORT, () => console.log("Listening on port", process.env.PORT));
     }
 
 

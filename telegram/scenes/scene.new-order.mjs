@@ -2,13 +2,14 @@ import { Scenes, Markup } from 'telegraf';
 import { ua } from '../../translate.mjs';
 import { mainKeyboard } from '../middleware/keyboards.mjs';
 import { createOrder } from '../../remonline/remonline.utils.mjs';
+import { leaveSceneOnCommand } from '../middleware/start-handler.mjs';
 
 const isDataCorrentBtm = (
     () => {
         return Markup.inlineKeyboard([
             [
-                Markup.button.callback('Так', 'order_is_ok'),
-                Markup.button.callback('Ні', 'wrong_order')
+                Markup.button.callback('🟢 Так', 'order_is_ok'),
+                Markup.button.callback('🔴 Ні', 'wrong_order')
             ]
         ])
     }
@@ -49,7 +50,7 @@ export const createOrderScene = new Scenes.WizardScene(
         // ctx.wizard.state.contactData.apointmenDate = apointmenDate;
         // ctx.wizard.state.contactData.apointmenDateString = ctx.message?.text;
 
-        if (ctx.message?.text?.length <= 9) {
+        if (ctx.message?.text?.length <= 3) {
             ctx.reply(ua.createOrder.shortMalfunction);
             return;
         }
@@ -62,11 +63,11 @@ export const createOrderScene = new Scenes.WizardScene(
         await ctx.reply(ua.createOrder.askToVefirApointment);
 
         let text = '';
-        text += `Авто: ${ctx.wizard.state.contactData.plateNumber}`;
+        text += `🚙 Авто: ${ctx.wizard.state.contactData.plateNumber}`;
         text += `\n`;
-        text += `Причина: ${ctx.wizard.state.contactData.malfunction}`;
+        text += `🗓 Причина: ${ctx.wizard.state.contactData.malfunction}`;
         text += `\n`;
-        text += `Дата: ${ctx.wizard.state.contactData.apointmenDateString}`;
+        text += `⏰ Дата: ${ctx.wizard.state.contactData.apointmenDateString}`;
 
         ctx.reply(text, isDataCorrentBtm);
         return ctx.wizard.next();
@@ -98,14 +99,14 @@ export const createOrderScene = new Scenes.WizardScene(
             let text = ua.createOrder.apointmentDone;
             text += `\n`;
             text += `\n`;
-            text += `Документ: ${idLabel}`;
+            text += `🆔 Документ: ${idLabel}`;
             text += `\n`;
             text += `\n`;
-            text += `Авто: ${plateNumber}`;
+            text += `🚙 Авто: ${plateNumber}`;
             text += `\n`;
-            text += `Причина: ${malfunction}`;
+            text += `🗓  Причина: ${malfunction}`;
             text += `\n`;
-            text += `Дата: ${apointmenDateString}`;
+            text += `⏰ Дата: ${apointmenDateString}`;
             text += `\n`;
             text += ua.createOrder.apointmentWaitingApproval;
             await ctx.scene.leave();
@@ -115,3 +116,5 @@ export const createOrderScene = new Scenes.WizardScene(
         }
     }
 );
+
+createOrderScene.command('start', leaveSceneOnCommand);
