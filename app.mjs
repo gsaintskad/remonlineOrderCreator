@@ -58,7 +58,7 @@ bot.use(stage.middleware());
     }
 
     if (process.env.ENV == 'prod') {
-        app.listen(process.env.PORT, process.env.HOST, () => console.log("Listening on port", process.env.PORT));
+        app.listen(process.env.PORT, () => console.log("Listening on port", process.env.PORT));
     }
 
 

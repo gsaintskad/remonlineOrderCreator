@@ -5,7 +5,7 @@
   "main": "app.ts",
   "type": "commonjs",
   "scripts": {
-    "dev": "ENV=dev nodemon -r dotenv/config app.mjs",
+    "dev": "ENV=dev nodemon --trace-deprecation -r dotenv/config app.mjs",
     "prod": "ENV=prod nodemon -r dotenv/config app.mjs",
     "testngrok": "ENV=ngrok nodemon -r dotenv/config app.mjs",
     "remonline": "REMONLINE_MODE=dev node -r dotenv/config ./remonline/utils.js"
