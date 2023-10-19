@@ -6,6 +6,9 @@ import {
 import express from "express";
 import ngrok from 'ngrok';
 
+import fs from 'fs'
+import https from 'https'
+
 import { createOrderScene } from './telegram/scenes/scene.new-order.mjs';
 import { createRemonlineId } from './telegram/scenes/scene.new-remonline-id.mjs';
 import { dbLogger } from './telegram/middleware/db-logger.mjs';
@@ -32,7 +35,6 @@ bot.use(stage.middleware());
         app.use(await bot.createWebhook({ domain: process.env.HOST }));
     }
 
-
     bot.use(dbLogger);
     bot.command('start', onStart);
 
@@ -58,7 +60,23 @@ bot.use(stage.middleware());
     }
 
     if (process.env.ENV == 'prod') {
-        app.listen(process.env.PORT, () => console.log("Listening on port", process.env.PORT));
+
+        const options = {
+            key: fs.readFileSync('./private.key.pem'),
+            cert: fs.readFileSync('./domain.cert.pem'),
+        };
+
+        const server = https.createServer(options, app).listen(process.env.PORT, function () {
+            console.log("Express server listening on port " + process.env.PORT);
+        });
+
+        console.log({server})
+
+        app.get('/', function (req, res) {
+            res.end("Hi from remonlinebot");
+        });
+
+        // app.listen(process.env.PORT, () => console.log("Listening on port", process.env.PORT));
     }
 
 
