@@ -3,9 +3,9 @@ module.exports = {
         name: "rembot",
         script: "app.mjs",
         watch: true,
-        node_args: '--trace-deprecation -r dotenv/config',
+        node_args: '-r dotenv/config',
         env: {
-            ENV: "dev",
+            ENV: "prod",
         }
     }]
 }
