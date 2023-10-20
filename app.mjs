@@ -40,6 +40,7 @@ bot.use(stage.middleware());
     if (process.env.ENV == 'dev') {
         bot.command('reset', onReset);
     }
+    
     bot.start()
 
     bot.hears(keyboardText.newAppointment, (ctx) => {
