@@ -3,6 +3,7 @@ import { ua } from '../../translate.mjs';
 import { mainKeyboard } from '../middleware/keyboards.mjs';
 import { createOrder } from '../../remonline/remonline.utils.mjs';
 import { leaveSceneOnCommand } from '../middleware/start-handler.mjs';
+import { saveOrder } from '../../remonline/remonline.queries.mjs';
 
 const isDataCorrentBtm = (
     () => {
@@ -87,7 +88,7 @@ export const createOrderScene = new Scenes.WizardScene(
         if (data == 'order_is_ok') {
             const { malfunction, plateNumber, apointmenDate, apointmenDateString } = ctx.wizard.state.contactData
             const scheduledFor = new Date(apointmenDate).getTime();
-            const { idLabel } = await createOrder(
+            const { idLabel, orderId } = await createOrder(
                 {
                     malfunction,
                     scheduledFor,
@@ -95,6 +96,14 @@ export const createOrderScene = new Scenes.WizardScene(
                     // telegramId: ctx.update.callback_query?.from?.id,
                     remonlineId: ctx.session.remonline_id
                 });
+
+            await saveOrder({
+                orderId,
+                orderLable: idLabel,
+                createdBy: ctx.update.callback_query.from.id,
+                plateNumber,
+                malfunction
+            })
 
             let text = ua.createOrder.apointmentDone;
             text += `\n`;
