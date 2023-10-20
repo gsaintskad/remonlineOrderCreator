@@ -69,8 +69,6 @@ bot.use(stage.middleware());
             console.log("Express server listening on port " + process.env.PORT);
         });
 
-        console.log({server})
-
         app.get('/', function (req, res) {
             res.end("Hi from remonlinebot");
         });

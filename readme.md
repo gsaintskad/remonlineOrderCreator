@@ -40,4 +40,5 @@ Getting Started:
 Session details:
 
 ctx.session.saved - wrote at least once
+
 ctx.session.remonline_id - found or create remonline client
