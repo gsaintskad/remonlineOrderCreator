@@ -1,5 +1,8 @@
 import { Scenes, Markup } from 'telegraf';
-import { ua } from '../../translate.mjs';
+import {
+    ua,
+    malfunctionTypes
+} from '../../translate.mjs';
 import { mainKeyboard } from '../middleware/keyboards.mjs';
 import { createOrder } from '../../remonline/remonline.utils.mjs';
 import { leaveSceneOnCommand } from '../middleware/start-handler.mjs';
@@ -16,20 +19,33 @@ const isDataCorrentBtm = (
     }
 )()
 
+
+const malfunctionTypesKeyboard = (
+    () => {
+        const buttons = [
+            [malfunctionTypes.chassis],
+            [malfunctionTypes.electrical],
+            [malfunctionTypes.bodywork],
+            [malfunctionTypes.maintenance, malfunctionTypes.other]
+        ]
+        return Markup.keyboard(buttons).oneTime(true).resize(true)
+    }
+)()
+
 export const createOrderScene = new Scenes.WizardScene(
     process.env.CREATE_ORDER_SCENE,
     (ctx) => {
         ctx.reply(ua.createOrder.askPlateNumber, Markup.removeKeyboard());
-        ctx.wizard.state.contactData = {};
         return ctx.wizard.next();
     },
     async (ctx) => {
+        ctx.wizard.state.contactData = {};
         if (ctx.message?.text?.length != 8) {
             ctx.reply(ua.createOrder.wrongPlateNumber);
             return;
         }
         ctx.wizard.state.contactData.plateNumber = ctx.message.text;
-        ctx.reply(ua.createOrder.askMalfunction);
+        ctx.reply(ua.createOrder.pickMalfunctionType, malfunctionTypesKeyboard);
         return ctx.wizard.next();
     },
     // async (ctx) => {
@@ -47,15 +63,30 @@ export const createOrderScene = new Scenes.WizardScene(
         //     ctx.reply(ua.createOrder.wrongApointmenDateFormat);
         //     return;
         // }
-
         // ctx.wizard.state.contactData.apointmenDate = apointmenDate;
         // ctx.wizard.state.contactData.apointmenDateString = ctx.message?.text;
 
-        if (ctx.message?.text?.length <= 3) {
-            ctx.reply(ua.createOrder.shortMalfunction);
+        if (!Object.values(malfunctionTypes).includes(ctx.message?.text) && !ctx.wizard.state.contactData.malfunctionType) {
+            ctx.reply(ua.createOrder.pickMalfunctionType, malfunctionTypesKeyboard);
             return;
         }
-        ctx.wizard.state.contactData.malfunction = ctx.message.text;
+
+        ctx.wizard.state.contactData.malfunctionType ??= ctx.message?.text;
+
+        if (!ctx.message?.text) {
+            ctx.reply(ua.createOrder.askMalfunction, Markup.removeKeyboard());
+            return
+        }
+
+        if (ctx.wizard.state.contactData.waitingMalfunctionDescription) {
+            ctx.wizard.state.contactData.malfunctionDescription = ctx.message?.text;
+        }
+
+        if (!ctx.wizard.state.contactData.malfunctionDescription && ctx.message?.text == malfunctionTypes.other) {
+            ctx.wizard.state.contactData.waitingMalfunctionDescription = true
+            ctx.reply(ua.createOrder.askMalfunction, Markup.removeKeyboard());
+            return
+        }
 
 
         ctx.wizard.state.contactData.apointmenDate = new Date();
@@ -66,7 +97,11 @@ export const createOrderScene = new Scenes.WizardScene(
         let text = '';
         text += `🚙 Авто: ${ctx.wizard.state.contactData.plateNumber}`;
         text += `\n`;
-        text += `🗓 Причина: ${ctx.wizard.state.contactData.malfunction}`;
+        text += `🗓 Причина: ${ctx.wizard.state.contactData.malfunctionType}`;
+        if (ctx.wizard.state.contactData.malfunctionDescription) {
+            text += `\n`;
+            text += `🗓 Деталі: ${ctx.wizard.state.contactData.malfunctionDescription}`;
+        }
         text += `\n`;
         text += `⏰ Дата: ${ctx.wizard.state.contactData.apointmenDateString}`;
 
@@ -86,8 +121,20 @@ export const createOrderScene = new Scenes.WizardScene(
         }
 
         if (data == 'order_is_ok') {
-            const { malfunction, plateNumber, apointmenDate, apointmenDateString } = ctx.wizard.state.contactData
+            const {
+                malfunctionDescription,
+                malfunctionType,
+                plateNumber,
+                apointmenDate,
+                apointmenDateString
+            } = ctx.wizard.state.contactData
             const scheduledFor = new Date(apointmenDate).getTime();
+
+            let malfunction = malfunctionType
+            if (malfunctionDescription) {
+                malfunction += `. Деталі: ${malfunctionDescription}`
+            }
+
             const { idLabel, orderId } = await createOrder(
                 {
                     malfunction,
@@ -113,7 +160,11 @@ export const createOrderScene = new Scenes.WizardScene(
             text += `\n`;
             text += `🚙 Авто: ${plateNumber}`;
             text += `\n`;
-            text += `🗓  Причина: ${malfunction}`;
+            text += `🗓  Причина: ${malfunctionType}`;
+            if (malfunctionDescription) {
+                text += `\n`;
+                text += `🗓 Деталі: ${malfunctionDescription}`;
+            }
             text += `\n`;
             text += `⏰ Дата: ${apointmenDateString}`;
             text += `\n`;
