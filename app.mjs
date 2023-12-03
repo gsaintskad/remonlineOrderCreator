@@ -30,18 +30,12 @@ bot.use(stage.middleware());
 
 (async () => {
 
-    if (process.env.ENV == 'prod') {
-        app.use(await bot.createWebhook({ domain: process.env.HOST }));
-    }
-
     bot.use(dbLogger);
-    bot.command('start', onStart);
+    bot.start(onStart);
 
     if (process.env.ENV == 'dev') {
         bot.command('reset', onReset);
     }
-    
-    bot.start()
 
     bot.hears(keyboardText.newAppointment, (ctx) => {
         if (!ctx.session.remonline_id) {
@@ -59,19 +53,12 @@ bot.use(stage.middleware());
         process.once('SIGTERM', () => bot.stop('SIGTERM'))
     }
 
+
     if (process.env.ENV == 'prod') {
+        app.use(await bot.createWebhook({ domain: process.env.HOST, path: process.env.HOST_PATH }));
 
-        const options = {
-            key: fs.readFileSync('./private.key.pem'),
-            cert: fs.readFileSync('./domain.cert.pem'),
-        };
-
-        const server = https.createServer(options, app).listen(process.env.PORT, function () {
-            console.log("Express server listening on port " + process.env.PORT);
-        });
-
-        app.get('/', function (req, res) {
-            res.end("Hi from remonlinebot");
+        app.listen(process.env.PORT, () => {
+            console.log(`Repairstationbot listen at ${process.env.PORT}`);
         });
     }
 
