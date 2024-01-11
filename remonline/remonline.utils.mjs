@@ -67,7 +67,12 @@ export async function createOrder({
         if (response.status == 403 && code == 101) {
             console.info({ function: 'createOrder', message: 'Get new Auth' })
             await remonlineTokenToEnv(true);
-            return await createOrder({ malfunction, scheduledFor });
+            return await createOrder({
+                malfunction,
+                scheduledFor,
+                plateNumber,
+                remonlineId
+            });
         }
 
         console.error({ function: 'createOrder', message, validation, status: response.status })
@@ -114,7 +119,7 @@ export async function createClient({
     number,
     telegramId
 }) {
-  
+
     const params = new URLSearchParams();
     params.append('token', process.env.REMONLINE_API_TOKEN);
     params.append('name', fullName);
