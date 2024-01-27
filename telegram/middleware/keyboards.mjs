@@ -8,3 +8,9 @@ export const mainKeyboard = (
         return Markup.keyboard(buttons).oneTime(true).resize(true)
     }
 )()
+
+export const listKeyboard = (
+    (buttons) => {
+        return Markup.keyboard(buttons).oneTime(false).resize(true)
+    }
+)

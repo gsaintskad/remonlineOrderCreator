@@ -1,6 +1,6 @@
 {
   "name": "remonlinebot",
-  "version": "0.0.1",
+  "version": "1.0.1",
   "description": "telegran integration for remonline",
   "main": "app.ts",
   "type": "commonjs",

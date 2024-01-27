@@ -16,6 +16,10 @@ Getting Started:
 
 `node node_modules/db-migrate/bin/db-migrate db:create main`
 
+add main branch with
+
+`insert into branches(id,name,public_name) values("112954","name","public name")`
+
 4. run migrations
 
 `node node_modules/db-migrate/bin/db-migrate up`

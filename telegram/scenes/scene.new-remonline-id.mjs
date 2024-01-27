@@ -4,13 +4,19 @@ import parsePhoneNumber from 'libphonenumber-js';
 import * as EmailValidator from 'email-validator';
 import {
     getClientsByPhone,
-    createClient
+    createClient,
+    editClient
 } from '../../remonline/remonline.utils.mjs';
-import { saveRemonlineId } from '../telegram.queries.mjs';
+import {
+    saveRemonlineId,
+    getBranchList
+} from '../telegram.queries.mjs';
 import {
     onStart,
     leaveSceneOnCommand
 } from '../middleware/start-handler.mjs';
+
+import { listKeyboard } from '../middleware/keyboards.mjs';
 
 const noEmailInlineBtm = (() => {
     return Markup.inlineKeyboard([
@@ -32,7 +38,7 @@ const isDataCorrentBtm = (
 )()
 
 const userInfoAppruvalText = (userData) => {
-    const { number, fullName, email } = userData
+    const { number, fullName, email, branch_public_name } = userData
     let text = ''
     text += `👤 Ім\`я: ${fullName}`
     text += `\n`;
@@ -42,14 +48,57 @@ const userInfoAppruvalText = (userData) => {
         text += `\n`;
         text += `🌍 Пошта: ${email}`
     }
+    text += `\n`;
+    text += `🏘 Місто: ${branch_public_name}`
     return text
 }
 
+const branchListObj = await getBranchList();
+
 export const createRemonlineId = new Scenes.WizardScene(
     process.env.CREATE_REMONLINE_ID,
-    (ctx) => {
-        ctx.reply(ua.createRemonlineId.askFullName, Markup.removeKeyboard());
+    async (ctx) => {
         ctx.wizard.state.userData = {};
+
+        const branchList = branchListObj.map(b => {
+            return [b.public_name]
+        })
+        const otherCity = branchList[0];
+        branchList.shift()
+
+        ctx.reply(ua.createRemonlineId.askCity, listKeyboard([...branchList, otherCity]));
+        return ctx.wizard.next();
+    }, (ctx) => {
+
+        const [selectedBranch] = branchListObj.filter(b => {
+            return b.public_name === ctx.message?.text
+        })
+
+        if (!selectedBranch) {
+            ctx.reply(ua.createRemonlineId.cityNotMatch);
+            return;
+        }
+
+        const { id: branch_id, public_name } = selectedBranch
+        ctx.wizard.state.userData.branch_id = branch_id
+        ctx.wizard.state.userData.branch_public_name = public_name
+
+        if (public_name == 'Інше Місто') {
+            ctx.reply(ua.createRemonlineId.pickOwnCity, Markup.removeKeyboard());
+            return ctx.wizard.next();
+        }
+
+        ctx.reply(ua.createRemonlineId.askFullName, Markup.removeKeyboard());
+        return ctx.wizard.selectStep(3);
+    },
+    (ctx) => {
+        if (ctx.message?.text?.length < 3) {
+            ctx.reply(ua.createRemonlineId.cityToShort);
+            return;
+        }
+
+        ctx.wizard.state.userData.branch_public_name += `: ${ctx.message.text}`;
+        ctx.reply(ua.createRemonlineId.askFullName, Markup.removeKeyboard());
         return ctx.wizard.next();
     },
     (ctx) => {
@@ -91,7 +140,7 @@ export const createRemonlineId = new Scenes.WizardScene(
 
             await ctx.reply(ua.createRemonlineId.areYouExistingClient);
             await ctx.reply(userInfoAppruvalText(ctx.wizard.state.userData), isDataCorrentBtm);
-            return ctx.wizard.selectStep(4);
+            return ctx.wizard.selectStep(6);
         }
 
         ctx.reply(ua.createRemonlineId.askMail, noEmailInlineBtm);
@@ -112,7 +161,6 @@ export const createRemonlineId = new Scenes.WizardScene(
 
         ctx.wizard.state.userData.email = ctx.message?.text
 
-
         await ctx.reply(ua.createRemonlineId.askToCheckContactInfo);
         await ctx.reply(userInfoAppruvalText(ctx.wizard.state.userData), isDataCorrentBtm);
         return ctx.wizard.next();
@@ -129,10 +177,16 @@ export const createRemonlineId = new Scenes.WizardScene(
                 email,
                 fullName,
                 remonline_id,
-                number } = ctx.wizard.state.userData;
+                number,
+                branch_id,
+                branch_public_name } = ctx.wizard.state.userData;
 
             if (remonline_id) {
                 ctx.session.remonline_id = remonline_id;
+                await editClient({
+                    id: remonline_id,
+                    branchPublicName: branch_public_name
+                })
             }
 
             if (!remonline_id) {
@@ -142,14 +196,20 @@ export const createRemonlineId = new Scenes.WizardScene(
                     fullName,
                     number,
                     telegramId: from.id,
+                    branchPublicName: branch_public_name
                 });
 
                 ctx.session.remonline_id = clientId;
             }
 
+            ctx.session.branch_id = branch_id
+            ctx.session.branch_public_name = branch_public_name
+            
             await saveRemonlineId({
                 telegramId: from.id,
-                remonlineId: ctx.session.remonline_id
+                remonlineId: ctx.session.remonline_id,
+                branchId: branch_id,
+                branchPublicName: branch_public_name
             })
 
             ctx.scene.leave();
@@ -160,7 +220,14 @@ export const createRemonlineId = new Scenes.WizardScene(
         if (data === 'i_put_wrong_data') {
             await ctx.answerCbQuery();
             ctx.wizard.state.userData = {};
-            ctx.reply(ua.createRemonlineId.askFullNameAgain);
+
+            const branchList = branchListObj.map(b => {
+                return [b.public_name]
+            })
+            const otherCity = branchList[0];
+            branchList.shift()
+
+            ctx.reply(ua.createRemonlineId.askCity, listKeyboard([...branchList, otherCity]));
             return ctx.wizard.selectStep(1);
         }
 

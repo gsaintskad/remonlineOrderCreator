@@ -14,6 +14,8 @@ export async function onStart(ctx, next) {
 export async function onReset(ctx, next) {
     await resetRemonlineId({ telegramId: ctx.message.from.id })
     ctx.session.remonline_id = null
+    ctx.session.branch_id = null
+    ctx.session.branch_public_name = null
     await next()
 }
 
@@ -23,4 +25,13 @@ export async function leaveSceneOnCommand(ctx, next) {
     }
     await ctx.scene.leave();
     return await onStart(ctx, next);
+}
+
+export async function onEdit(ctx, next) {
+    if (!ctx.session.remonline_id) {
+        ctx.reply(ua.needToRegistrate)
+        return
+    }
+    ctx.scene.enter(process.env.USER_EDIT_SCENE);
+    await next()
 }

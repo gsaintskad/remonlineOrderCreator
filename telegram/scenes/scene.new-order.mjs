@@ -141,7 +141,9 @@ export const createOrderScene = new Scenes.WizardScene(
                     scheduledFor,
                     plateNumber,
                     // telegramId: ctx.update.callback_query?.from?.id,
-                    remonlineId: ctx.session.remonline_id
+                    remonlineId: ctx.session.remonline_id,
+                    branchPublicName: ctx.session.branch_public_name,
+                    branchId: ctx.session.branch_id,
                 });
 
             await saveOrder({

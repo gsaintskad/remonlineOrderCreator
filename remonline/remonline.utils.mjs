@@ -27,14 +27,16 @@ export async function createOrder({
     malfunction,
     scheduledFor,
     plateNumber,
-    remonlineId
+    remonlineId,
+    branchPublicName,
+    branchId
 }) {
 
     const params = new URLSearchParams();
     params.append('duration', 60);
 
     params.append('token', process.env.REMONLINE_API_TOKEN);
-    params.append('branch_id', process.env.BRANCH_ID_UA);
+    params.append('branch_id', branchId);
     params.append('order_type', process.env.ORDER_TYPE_REPAIR);
     params.append('client_id', remonlineId);
     // params.append('manager', process.env.MANAGER_ID);
@@ -48,7 +50,8 @@ export async function createOrder({
         // 6728288: city,
         // 6728289: phone,
         // 6329336: telegramId,
-        6728287: plateNumber
+        6728287: plateNumber,
+        6728288: branchPublicName
     }));
 
     const response = await fetch(`${process.env.REMONLINE_API}/order/`, {
@@ -117,20 +120,23 @@ export async function createClient({
     email,
     fullName,
     number,
-    telegramId
+    telegramId,
+    branchPublicName
 }) {
 
     const params = new URLSearchParams();
     params.append('token', process.env.REMONLINE_API_TOKEN);
     params.append('name', fullName);
     params.append('phone[]', number);
+
     if (email) {
         params.append('email', email);
     }
 
     params.append('custom_fields', JSON.stringify({
         6729251: telegramId.toString(),
-        5370833: 'Внешний клиент'
+        5370833: 'Зовнішній клієнт',
+        6879276: branchPublicName
     }));
 
     const response = await fetch(`${process.env.REMONLINE_API}/clients/`, {
@@ -147,13 +153,14 @@ export async function createClient({
         const { validation } = message
 
         if (response.status == 403 && code == 101) {
-            console.info({ function: 'createOrder', message: 'Get new Auth' })
+            console.info({ function: 'createClient', message: 'Get new Auth' })
             await remonlineTokenToEnv(true);
             return await createClient({
                 email,
                 fullName,
                 number,
-                telegramId
+                telegramId,
+                branchPublicName
             });
         }
 
@@ -164,6 +171,49 @@ export async function createClient({
     const { data: createdData } = data
     // console.log({ createdData })
     const { id: clientId } = createdData
+    return { clientId };
+}
+
+export async function editClient({
+    id,
+    branchPublicName
+}) {
+
+    const params = new URLSearchParams();
+    params.append('token', process.env.REMONLINE_API_TOKEN);
+    params.append('id', id);
+    params.append('custom_fields', JSON.stringify({
+        6879276: branchPublicName
+    }));
+
+    const response = await fetch(`${process.env.REMONLINE_API}/clients/`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params
+    });
+
+
+    const data = await response.json();
+    const { success } = data
+    if (!success) {
+        const { message, code } = data
+        const { validation } = message
+
+        if (response.status == 403 && code == 101) {
+            console.info({ function: 'editClient', message: 'Get new Auth' })
+            await remonlineTokenToEnv(true);
+            return await editClient({
+                id,
+                branchPublicName
+            });
+        }
+
+        console.error({ function: 'editClient', message, validation, status: response.status })
+        return
+    }
+
+    const { data: editData } = data
+    const { id: clientId } = editData
     return { clientId };
 }
 
