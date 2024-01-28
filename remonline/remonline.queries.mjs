@@ -37,3 +37,8 @@ export async function saveOrder({
         malfunction
     )
 }
+
+
+export async function getBranchManager(branch_id) {
+    return await db.get(`SELECT manager_id FROM branches where id = ?`, branch_id)
+}

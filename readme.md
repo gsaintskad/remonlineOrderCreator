@@ -18,7 +18,7 @@ Getting Started:
 
 add main branch with
 
-`insert into branches(id,name,public_name) values("112954","name","public name")`
+`insert into branches(id,name,public_name,manager_id) values("112954","name","public name","employee id")`
 
 4. run migrations
 

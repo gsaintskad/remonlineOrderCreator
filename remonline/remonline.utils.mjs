@@ -29,7 +29,8 @@ export async function createOrder({
     plateNumber,
     remonlineId,
     branchPublicName,
-    branchId
+    branchId,
+    managerId
 }) {
 
     const params = new URLSearchParams();
@@ -39,7 +40,7 @@ export async function createOrder({
     params.append('branch_id', branchId);
     params.append('order_type', process.env.ORDER_TYPE_REPAIR);
     params.append('client_id', remonlineId);
-    // params.append('manager', process.env.MANAGER_ID);
+    params.append('manager', managerId);
 
     params.append('malfunction', malfunction);
     params.append('scheduled_for', scheduledFor);
@@ -74,7 +75,10 @@ export async function createOrder({
                 malfunction,
                 scheduledFor,
                 plateNumber,
-                remonlineId
+                remonlineId,
+                branchPublicName,
+                branchId,
+                managerId
             });
         }
 

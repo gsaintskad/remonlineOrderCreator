@@ -6,7 +6,10 @@ import {
 import { mainKeyboard } from '../middleware/keyboards.mjs';
 import { createOrder } from '../../remonline/remonline.utils.mjs';
 import { leaveSceneOnCommand } from '../middleware/start-handler.mjs';
-import { saveOrder } from '../../remonline/remonline.queries.mjs';
+import {
+    saveOrder,
+    getBranchManager
+} from '../../remonline/remonline.queries.mjs';
 
 const isDataCorrentBtm = (
     () => {
@@ -134,47 +137,56 @@ export const createOrderScene = new Scenes.WizardScene(
             if (malfunctionDescription) {
                 malfunction += `. Деталі: ${malfunctionDescription}`
             }
+            const manager = await getBranchManager(ctx.session.branch_id);
+            const { manager_id } = manager
 
-            const { idLabel, orderId } = await createOrder(
-                {
-                    malfunction,
-                    scheduledFor,
+            try {
+                const { idLabel, orderId } = await createOrder(
+                    {
+                        malfunction,
+                        scheduledFor,
+                        plateNumber,
+                        // telegramId: ctx.update.callback_query?.from?.id,
+                        remonlineId: ctx.session.remonline_id,
+                        branchPublicName: ctx.session.branch_public_name,
+                        branchId: ctx.session.branch_id,
+                        managerId: manager_id
+                    });
+
+                await saveOrder({
+                    orderId,
+                    orderLable: idLabel,
+                    createdBy: ctx.update.callback_query.from.id,
                     plateNumber,
-                    // telegramId: ctx.update.callback_query?.from?.id,
-                    remonlineId: ctx.session.remonline_id,
-                    branchPublicName: ctx.session.branch_public_name,
-                    branchId: ctx.session.branch_id,
-                });
+                    malfunction
+                })
 
-            await saveOrder({
-                orderId,
-                orderLable: idLabel,
-                createdBy: ctx.update.callback_query.from.id,
-                plateNumber,
-                malfunction
-            })
-
-            let text = ua.createOrder.apointmentDone;
-            text += `\n`;
-            text += `\n`;
-            text += `🆔 Документ: ${idLabel}`;
-            text += `\n`;
-            text += `\n`;
-            text += `🚙 Авто: ${plateNumber}`;
-            text += `\n`;
-            text += `🗓  Причина: ${malfunctionType}`;
-            if (malfunctionDescription) {
+                let text = ua.createOrder.apointmentDone;
                 text += `\n`;
-                text += `🗓 Деталі: ${malfunctionDescription}`;
+                text += `\n`;
+                text += `🆔 Документ: ${idLabel}`;
+                text += `\n`;
+                text += `\n`;
+                text += `🚙 Авто: ${plateNumber}`;
+                text += `\n`;
+                text += `🗓  Причина: ${malfunctionType}`;
+                if (malfunctionDescription) {
+                    text += `\n`;
+                    text += `🗓 Деталі: ${malfunctionDescription}`;
+                }
+                text += `\n`;
+                text += `⏰ Дата: ${apointmenDateString}`;
+                text += `\n`;
+                text += ua.createOrder.apointmentWaitingApproval;
+                await ctx.scene.leave();
+                await ctx.answerCbQuery('👌');
+                await ctx.reply(text, mainKeyboard);
+                return
+            } catch (e) {
+                console.error({ message: 'error while createOrder in new order scene', e });
+                await ctx.answerCbQuery(ua.errorWhileCreateOrder, { show_alert: true });
+                return
             }
-            text += `\n`;
-            text += `⏰ Дата: ${apointmenDateString}`;
-            text += `\n`;
-            text += ua.createOrder.apointmentWaitingApproval;
-            await ctx.scene.leave();
-            await ctx.answerCbQuery('👌');
-            await ctx.reply(text, mainKeyboard);
-            return
         }
     }
 );
