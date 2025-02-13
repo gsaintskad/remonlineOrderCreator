@@ -191,14 +191,15 @@ export const createRemonlineId = new Scenes.WizardScene(
 
             if (!remonline_id) {
 
-                const { clientId } = await createClient({
+                const a = await createClient({
                     email,
                     fullName,
                     number,
                     telegramId: from.id,
                     branchPublicName: branch_public_name
                 });
-
+                console.log(`\n\n\n\n\n${JSON.stringify(a)}\n\n\n\n`);
+                const { clientId }=a;
                 ctx.session.remonline_id = clientId;
             }
 

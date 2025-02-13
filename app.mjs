@@ -18,9 +18,9 @@ import {
 import { keyboardText } from './translate.mjs';
 
 import { remonlineTokenToEnv } from './remonline/remonline.api.mjs'
+import * as ctx from "telegraf";
 
 await remonlineTokenToEnv();
-
 const bot = new Telegraf(process.env.TELEGRAM_API_KEY);
 const stage = new Scenes.Stage([createRemonlineId, createOrderScene, editUserScene]);
 const app = express();
@@ -49,6 +49,7 @@ bot.use(stage.middleware());
         // Enable graceful stop
         process.once('SIGINT', () => bot.stop('SIGINT'))
         process.once('SIGTERM', () => bot.stop('SIGTERM'))
+        console.log('bot works...');
     }
 
 
@@ -58,5 +59,7 @@ bot.use(stage.middleware());
             console.log(`Repairstationbot listen at ${process.env.PORT}`);
         });
     }
+    console.log("ctx.session:", ctx.session);
+    console.log("ctx.session.remonline_id:", ctx.session?.remonline_id);
 
 })()

@@ -1,6 +1,7 @@
 
 import fetch from 'node-fetch';
 import { remonlineTokenToEnv } from './remonline.api.mjs'
+import {message} from "telegraf/filters";
 
 async function getOrderLable(orderId) {
 
@@ -121,67 +122,60 @@ export async function getClientsByPhone({
 }
 
 export async function createClient({
-    email,
-    fullName,
-    number,
-    telegramId,
-    branchPublicName
-}) {
+                                       email,
+                                       fullName,
+                                       number,
+                                       telegramId,
+                                       branchPublicName
+                                   }) {
+    const [first_name, last_name] = fullName.split(' ');
 
-    const params = new URLSearchParams();
-    params.append('token', process.env.REMONLINE_API_TOKEN);
-    params.append('name', fullName);
-    params.append('phone[]', number);
+    // Prepare request body correctly as a JSON object
+    const requestBody = {
+        token: process.env.REMONLINE_API_TOKEN,
+        first_name,
+        last_name: last_name || "n0_2nd_Name",
+        phone: [number], // Phone must be an array
+        custom_fields: {
+            6729251: telegramId.toString(),
+            5370833: 'Зовнішній клієнт',
+            f5370833: 'Зовнішній клієнт',
+            6879276: branchPublicName
+        }
+    };
 
     if (email) {
-        params.append('email', email);
+        requestBody.email = email;
     }
 
-    params.append('custom_fields', JSON.stringify({
-        6729251: telegramId.toString(),
-        5370833: 'Зовнішній клієнт',
-        6879276: branchPublicName
-    }));
+    console.log("Request Payload:", JSON.stringify(requestBody, null, 2)); // Debugging output
 
     const response = await fetch(`${process.env.REMONLINE_API}/clients/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: params
+        headers: { 'Content-Type': 'application/json' }, // Ensure JSON content type
+        body: JSON.stringify(requestBody) // Send as JSON, NOT as x-www-form-urlencoded
     });
 
-
     const data = await response.json();
-    const { success } = data
-    if (!success) {
-        const { message, code } = data
-        const { validation } = message
 
-        if (response.status == 403 && code == 101) {
-            console.info({ function: 'createClient', message: 'Get new Auth' })
-            await remonlineTokenToEnv(true);
-            return await createClient({
-                email,
-                fullName,
-                number,
-                telegramId,
-                branchPublicName
-            });
-        }
-
-        console.error({ function: 'createClient', message, validation, status: response.status })
-        return
+    if (!data.success) {
+        console.error({
+            function: 'createClient',
+            message:JSON.stringify(data.message) || "Unknown error",
+            validation: data.validation,
+            status: response.status
+        });
+        return;
     }
 
-    const { data: createdData } = data
-    // console.log({ createdData })
-    const { id: clientId } = createdData
-    return { clientId };
+    return { clientId: data.data.id };
 }
-
 export async function editClient({
     id,
     branchPublicName
 }) {
+
+
 
     const params = new URLSearchParams();
     params.append('token', process.env.REMONLINE_API_TOKEN);
@@ -219,6 +213,7 @@ export async function editClient({
     const { data: editData } = data
     const { id: clientId } = editData
     return { clientId };
+
 }
 
 
