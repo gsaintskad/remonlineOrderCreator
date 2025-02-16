@@ -1,7 +1,8 @@
 
 import fetch from 'node-fetch';
-import { remonlineTokenToEnv } from './remonline.api.mjs'
+import {remonlineTokenReturn, remonlineTokenToEnv} from './remonline.api.mjs'
 import {message} from "telegraf/filters";
+import remonline from '@api/remonline';
 
 async function getOrderLable(orderId) {
 
@@ -169,6 +170,48 @@ export async function createClient({
     }
 
     return { clientId: data.data.id };
+}
+export const getOrders=async()=>{
+    // remonlineTokenToEnv().then((response)=>{remonline.auth(process.env.REMONLINE_API_KEY)})
+    //     .then(()=>remonline.getOrders())
+    //     .then((response)=>{ console.log(response) })
+    //     .catch((error)=>console.log(error));
+    try {
+
+        // await remonlineTokenToEnv(true);
+        // const sdk=await remonline.auth('7f1a27773dfd3f2e6fb04d2c05281901bff387ea');
+        // console.log(`api token before fetching data ${process.env.REMONLINE_API_TOKEN}`);
+        // const sdk=await remonline.auth(process.env.REMONLINE_API_KEY);
+        const sdk=await remonline.auth( await remonlineTokenReturn());
+
+        const response=await remonline.getOrders();
+        console.log(JSON.stringify(response));
+    }
+    catch(err){
+        console.error(err);
+    }
+    // const requestBody = {
+    //     token: process.env.REMONLINE_API_TOKEN
+    // }
+    // const response = await fetch(`${process.env.REMONLINE_API}/order/`, {
+    //     method: 'GET',
+    //     headers: { 'Content-Type': 'application/json' }, // Ensure JSON content type
+    //     body: JSON.stringify(requestBody) // Send as JSON, NOT as x-www-form-urlencoded
+    // });
+    //
+    // const data = await response.json();
+    //
+    // if (!data.success) {
+    //     console.error({
+    //         function: 'getOrders',
+    //         message:JSON.stringify(data.message) || "Unknown error",
+    //         validation: data.validation,
+    //         status: response.status
+    //     });
+    //     return;
+    // }
+    //
+    // return response;
 }
 export async function editClient({
     id,

@@ -26,6 +26,14 @@ export async function leaveSceneOnCommand(ctx, next) {
     await ctx.scene.leave();
     return await onStart(ctx, next);
 }
+export const onGetOrders=async (ctx, next) => {
+    if (!ctx.session.remonline_id) {
+        ctx.reply(ua.needToRegistrate)
+        return
+    }
+    ctx.scene.enter(process.env.GET_ORDERS_SCENE);
+    await next()
+}
 
 export async function onEdit(ctx, next) {
     if (!ctx.session.remonline_id) {

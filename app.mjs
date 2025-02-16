@@ -12,17 +12,18 @@ import { dbLogger } from './telegram/middleware/db-logger.mjs';
 import {
     onStart,
     onReset,
-    onEdit
+    onEdit, onGetOrders
 } from './telegram/middleware/start-handler.mjs';
 
 import { keyboardText } from './translate.mjs';
 
 import { remonlineTokenToEnv } from './remonline/remonline.api.mjs'
 import * as ctx from "telegraf";
+import {getOrdersScene} from "./telegram/scenes/scene.get-orders.mjs";
 
 await remonlineTokenToEnv();
 const bot = new Telegraf(process.env.TELEGRAM_API_KEY);
-const stage = new Scenes.Stage([createRemonlineId, createOrderScene, editUserScene]);
+const stage = new Scenes.Stage([createRemonlineId, createOrderScene, editUserScene,getOrdersScene]);
 const app = express();
 
 bot.use(session());
@@ -33,6 +34,7 @@ bot.use(stage.middleware());
     bot.use(dbLogger);
     bot.start(onStart);
     bot.command('edit', onEdit);
+    bot.command('getOrders', onGetOrders);
 
     bot.hears(keyboardText.newAppointment, (ctx) => {
         if (!ctx.session.remonline_id) {
