@@ -185,7 +185,7 @@ export const getOrders=async()=>{
         const sdk=await remonline.auth( await remonlineTokenReturn());
 
         const response=await remonline.getOrders();
-        console.log(JSON.stringify(response));
+        console.log(response);
     }
     catch(err){
         console.error(err);
