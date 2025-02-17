@@ -186,32 +186,12 @@ export const getOrders=async()=>{
 
         const response=await remonline.getOrders();
         console.log(response);
+        return response;
     }
     catch(err){
         console.error(err);
     }
-    // const requestBody = {
-    //     token: process.env.REMONLINE_API_TOKEN
-    // }
-    // const response = await fetch(`${process.env.REMONLINE_API}/order/`, {
-    //     method: 'GET',
-    //     headers: { 'Content-Type': 'application/json' }, // Ensure JSON content type
-    //     body: JSON.stringify(requestBody) // Send as JSON, NOT as x-www-form-urlencoded
-    // });
-    //
-    // const data = await response.json();
-    //
-    // if (!data.success) {
-    //     console.error({
-    //         function: 'getOrders',
-    //         message:JSON.stringify(data.message) || "Unknown error",
-    //         validation: data.validation,
-    //         status: response.status
-    //     });
-    //     return;
-    // }
-    //
-    // return response;
+
 }
 export async function editClient({
     id,
