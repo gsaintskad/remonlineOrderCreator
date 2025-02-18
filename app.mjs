@@ -53,18 +53,19 @@ bot.use(stage.middleware());
             res.sendStatus(200);
         });
     }
-    app.get('/order', async (req, res) => {
+    app.get('/order/:remonline_id', async (req, res) => {
         try {
+
+            const { remonline_id } = req.params;
             const { chatId } = req.body;
-            const data = await getOrders();
-            // if (!chatId || !orderDetails) {
-            //     return res.status(400).json({ error: 'Missing required fields' });
-            // }
-           // k await bot.telegram.sendMessage(chatId, `New Order Received: ${JSON.stringify(data)}`);
+
+            const {data} = await getOrders({'clients_ids[]': String(remonline_id)});
+
+
             res.status(200).json({
                 status: 'success',
                 message: 'Order sent to Telegram bot',
-                orders: data.data
+                orders: data
             });
         } catch (error) {
             console.error('Error processing order:', error);

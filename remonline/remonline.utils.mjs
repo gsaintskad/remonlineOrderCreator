@@ -5,10 +5,10 @@ import {message} from "telegraf/filters";
 import remonline from '@api/remonline';
 
 async function getOrderLable(orderId) {
-
+    console.log(`await fetch(\`${process.env.REMONLINE_API}/order/?token=${process.env.REMONLINE_API_TOKEN}&ids[]=${orderId}\`);`);
     const response = await fetch(`${process.env.REMONLINE_API}/order/?token=${process.env.REMONLINE_API_TOKEN}&ids[]=${orderId}`);
     const data = await response.json();
-
+    console.log('lable data resp:',data);
     const { success } = data
     if (!success) {
         const { message } = data
@@ -34,7 +34,7 @@ export async function createOrder({
     branchId,
     managerId
 }) {
-
+    console.log("createOrder",arguments);
     const params = new URLSearchParams();
     params.append('duration', 60);
 
@@ -57,15 +57,28 @@ export async function createOrder({
         6728288: branchPublicName
     }));
 
-    const response = await fetch(`${process.env.REMONLINE_API}/order/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: params
+    let sdk = await remonline.auth('8ef29169a7fc763f7c3ee0980088bee53853b4c5');
+    const response=await remonline.createOrder({
+        branch_id:branchId,
+        order_type:process.env.ORDER_TYPE_REPAIR,
+        client_id:remonlineId,
+        scheduled_for:scheduledFor,
+
+        custom_fields:{
+            // 5294178: carMilleage,
+            // 5294177: title,
+            // 6728288: city,
+            // 6728289: phone,
+            // 6329336: telegramId,
+            6728287: plateNumber,
+            6728288: branchPublicName
+        }
     });
+    console.log(JSON.stringify(response));
+    // const data=await response.json();
 
-
-    const data = await response.json();
-    const { success } = data
+    // const data = await response.json();
+    const { success } = response.data
     if (!success) {
         const { message, code } = data
         const { validation } = message
@@ -88,10 +101,11 @@ export async function createOrder({
         return
     }
 
-    const { data: createdData } = data
-    const { id: orderId } = createdData
-    const { idLabel } = await getOrderLable(orderId)
-    return { orderId, idLabel };
+    const { data } = response.data
+    const { id } = data
+    const { idLabel } = await getOrderLable(id)
+    console.log('createOrder return:',data,id,idLabel)
+    return { id, idLabel };
 }
 
 export async function getClientsByPhone({
@@ -171,7 +185,7 @@ export async function createClient({
 
     return { clientId: data.data.id };
 }
-export const getOrders=async()=>{
+export const getOrders=async(params)=>{
     // remonlineTokenToEnv().then((response)=>{remonline.auth(process.env.REMONLINE_API_KEY)})
     //     .then(()=>remonline.getOrders())
     //     .then((response)=>{ console.log(response) })
@@ -184,9 +198,10 @@ export const getOrders=async()=>{
         // const sdk=await remonline.auth(process.env.REMONLINE_API_KEY);
         const sdk=await remonline.auth( await remonlineTokenReturn());
 
-        const response=await remonline.getOrders();
-        console.log(response);
-        return response;
+        // const response=await remonline.getOrders(params);
+        // // console.log(response);
+        // return response;
+        return await remonline.getOrders(params);
     }
     catch(err){
         console.error(err);
