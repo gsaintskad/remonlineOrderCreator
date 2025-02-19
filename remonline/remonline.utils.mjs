@@ -57,7 +57,7 @@ export async function createOrder({
         6728288: branchPublicName
     }));
 
-    let sdk = await remonline.auth('8ef29169a7fc763f7c3ee0980088bee53853b4c5');
+    const sdk=await remonline.auth( await remonlineTokenReturn());
     const response=await remonline.createOrder({
         branch_id:branchId,
         order_type:process.env.ORDER_TYPE_REPAIR,
